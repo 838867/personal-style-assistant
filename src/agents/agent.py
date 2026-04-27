@@ -13,6 +13,8 @@ from storage.memory.memory_saver import get_memory_saver
 from tools.user_profile_tool import get_user_profile, update_user_profile
 from tools.wardrobe_tool import add_clothing, query_wardrobe
 from tools.weather_tool import get_weather
+from tools.fitness_tool import create_fitness_plan, get_fitness_plan, log_exercise, get_exercise_log
+from tools.diet_tool import create_diet_plan, get_diet_plan, log_diet, get_diet_log, analyze_diet_and_exercise
 
 LLM_CONFIG = "config/agent_llm_config.json"
 
@@ -57,7 +59,16 @@ def build_agent(ctx=None):
         update_user_profile,
         add_clothing,
         query_wardrobe,
-        get_weather
+        get_weather,
+        create_fitness_plan,
+        get_fitness_plan,
+        log_exercise,
+        get_exercise_log,
+        create_diet_plan,
+        get_diet_plan,
+        log_diet,
+        get_diet_log,
+        analyze_diet_and_exercise
     ]
 
     return create_agent(

@@ -32,6 +32,7 @@ def get_user_profile() -> str:
 用户档案：
 - 身高：{profile.get('height', '未知')} cm
 - 体重：{profile.get('weight', '未知')} kg
+- 体脂率：{profile.get('body_fat_rate', '未知')}%
 - 体型：{profile.get('body_type', '未知')}
 - 肤色：{profile.get('skin_tone', '未知')}
 - 风格偏好：{profile.get('style_preference', '未知')}
@@ -49,7 +50,8 @@ def update_user_profile(
     body_type: str,
     skin_tone: str,
     style_preference: str,
-    city: str
+    city: str,
+    body_fat_rate: float = 0
 ) -> str:
     """
     更新用户档案信息
@@ -61,6 +63,7 @@ def update_user_profile(
         skin_tone: 肤色（如：暖色调、冷色调、中性色）
         style_preference: 风格偏好（如：休闲商务风、简约风、复古风等）
         city: 所在城市（如：江苏省扬州市）
+        body_fat_rate: 体脂率（%），可选
 
     Returns:
         str: 更新结果提示
@@ -72,31 +75,32 @@ def update_user_profile(
         # 查询是否已有档案
         existing = client.table('user_profile').select('id').execute()
 
+        update_data = {
+            'height': height,
+            'weight': weight,
+            'body_type': body_type,
+            'skin_tone': skin_tone,
+            'style_preference': style_preference,
+            'city': city
+        }
+
+        # 如果提供了体脂率，则添加到更新数据中
+        if body_fat_rate > 0:
+            update_data['body_fat_rate'] = body_fat_rate
+
         if existing.data:
             # 更新已有档案（取最新的一条）
             last_item = existing.data[-1]
             profile_id = last_item['id'] if isinstance(last_item, dict) else None
             if profile_id:
-                client.table('user_profile').update({
-                    'height': height,
-                    'weight': weight,
-                    'body_type': body_type,
-                    'skin_tone': skin_tone,
-                    'style_preference': style_preference,
-                    'city': city
-                }).eq('id', profile_id).execute()
-                return f"✓ 用户档案已更新：身高 {height}cm，体重 {weight}kg，体型 {body_type}"
+                client.table('user_profile').update(update_data).eq('id', profile_id).execute()
+                fat_str = f"，体脂率{body_fat_rate}%" if body_fat_rate > 0 else ""
+                return f"✓ 用户档案已更新：身高 {height}cm，体重 {weight}kg，体型 {body_type}{fat_str}"
         else:
             # 创建新档案
-            client.table('user_profile').insert({
-                'height': height,
-                'weight': weight,
-                'body_type': body_type,
-                'skin_tone': skin_tone,
-                'style_preference': style_preference,
-                'city': city
-            }).execute()
-            return f"✓ 用户档案已创建：身高 {height}cm，体重 {weight}kg，体型 {body_type}"
+            client.table('user_profile').insert(update_data).execute()
+            fat_str = f"，体脂率{body_fat_rate}%" if body_fat_rate > 0 else ""
+            return f"✓ 用户档案已创建：身高 {height}cm，体重 {weight}kg，体型 {body_type}{fat_str}"
 
     except APIError as e:
         raise Exception(f"更新用户档案失败: {e.message}")

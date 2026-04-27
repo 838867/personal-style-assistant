@@ -27,6 +27,7 @@ class UserProfile(Base):
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
     height: Mapped[float] = mapped_column(Float, nullable=False, comment="身高(cm)")
     weight: Mapped[float] = mapped_column(Float, nullable=False, comment="体重(kg)")
+    body_fat_rate: Mapped[Optional[float]] = mapped_column(Float, nullable=True, comment="体脂率(%)")
     body_type: Mapped[str] = mapped_column(String(50), nullable=False, comment="体型")
     skin_tone: Mapped[str] = mapped_column(String(50), nullable=False, comment="肤色")
     style_preference: Mapped[str] = mapped_column(String(100), nullable=False, comment="风格偏好")
@@ -53,6 +54,76 @@ class Wardrobe(Base):
     description: Mapped[Optional[str]] = mapped_column(String(500), nullable=True, comment="详细描述")
     created_at: Mapped[datetime.datetime] = mapped_column(DateTime(True), server_default=func.now(), nullable=False)
     updated_at: Mapped[Optional[datetime.datetime]] = mapped_column(DateTime(True), onupdate=func.now(), nullable=True)
+
+
+class FitnessPlan(Base):
+    """健身计划表 - 存储用户的健身计划"""
+    __tablename__ = "fitness_plan"
+    __table_args__ = (
+        Index("ix_fitness_plan_goal", "goal"),
+    )
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    goal: Mapped[str] = mapped_column(String(100), nullable=False, comment="健身目标(减脂/增肌/塑形/维持)")
+    target_weight: Mapped[Optional[float]] = mapped_column(Float, nullable=True, comment="目标体重(kg)")
+    weekly_workout_days: Mapped[int] = mapped_column(Integer, nullable=False, comment="每周训练天数")
+    workout_duration: Mapped[int] = mapped_column(Integer, nullable=False, comment="每次训练时长(分钟)")
+    intensity: Mapped[str] = mapped_column(String(50), nullable=False, comment="强度(低/中/高)")
+    plan_content: Mapped[str] = mapped_column(Text, nullable=False, comment="健身计划详细内容")
+    created_at: Mapped[datetime.datetime] = mapped_column(DateTime(True), server_default=func.now(), nullable=False)
+    updated_at: Mapped[Optional[datetime.datetime]] = mapped_column(DateTime(True), onupdate=func.now(), nullable=True)
+
+
+class DietPlan(Base):
+    """饮食计划表 - 存储用户的饮食计划"""
+    __tablename__ = "diet_plan"
+    __table_args__ = (
+        Index("ix_diet_plan_goal", "goal"),
+    )
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    goal: Mapped[str] = mapped_column(String(100), nullable=False, comment="饮食目标(减脂/增肌/维持)")
+    daily_calories: Mapped[int] = mapped_column(Integer, nullable=False, comment="每日目标热量(千卡)")
+    protein_ratio: Mapped[float] = mapped_column(Float, nullable=False, comment="蛋白质占比(0-1)")
+    carb_ratio: Mapped[float] = mapped_column(Float, nullable=False, comment="碳水化合物占比(0-1)")
+    fat_ratio: Mapped[float] = mapped_column(Float, nullable=False, comment="脂肪占比(0-1)")
+    plan_content: Mapped[str] = mapped_column(Text, nullable=False, comment="饮食计划详细内容")
+    created_at: Mapped[datetime.datetime] = mapped_column(DateTime(True), server_default=func.now(), nullable=False)
+    updated_at: Mapped[Optional[datetime.datetime]] = mapped_column(DateTime(True), onupdate=func.now(), nullable=True)
+
+
+class DailyDietLog(Base):
+    """每日饮食记录表"""
+    __tablename__ = "daily_diet_log"
+    __table_args__ = (
+        Index("ix_daily_diet_log_date", "log_date"),
+    )
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    log_date: Mapped[datetime.datetime] = mapped_column(DateTime(True), nullable=False, comment="记录日期")
+    meal_type: Mapped[str] = mapped_column(String(50), nullable=False, comment="餐次(早餐/午餐/晚餐/加餐)")
+    food_name: Mapped[str] = mapped_column(String(200), nullable=False, comment="食物名称")
+    calories: Mapped[float] = mapped_column(Float, nullable=False, comment="热量(千卡)")
+    protein: Mapped[Optional[float]] = mapped_column(Float, nullable=True, comment="蛋白质(g)")
+    notes: Mapped[Optional[str]] = mapped_column(String(500), nullable=True, comment="备注")
+    created_at: Mapped[datetime.datetime] = mapped_column(DateTime(True), server_default=func.now(), nullable=False)
+
+
+class DailyExerciseLog(Base):
+    """每日锻炼记录表"""
+    __tablename__ = "daily_exercise_log"
+    __table_args__ = (
+        Index("ix_daily_exercise_log_date", "log_date"),
+    )
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    log_date: Mapped[datetime.datetime] = mapped_column(DateTime(True), nullable=False, comment="记录日期")
+    exercise_name: Mapped[str] = mapped_column(String(100), nullable=False, comment="运动名称")
+    duration: Mapped[int] = mapped_column(Integer, nullable=False, comment="运动时长(分钟)")
+    calories_burned: Mapped[Optional[float]] = mapped_column(Float, nullable=True, comment="消耗热量(千卡)")
+    intensity: Mapped[str] = mapped_column(String(50), nullable=False, comment="强度(低/中/高)")
+    notes: Mapped[Optional[str]] = mapped_column(String(500), nullable=True, comment="备注")
+    created_at: Mapped[datetime.datetime] = mapped_column(DateTime(True), server_default=func.now(), nullable=False)
 
 
 t_pg_stat_statements = Table(
