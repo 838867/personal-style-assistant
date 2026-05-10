@@ -43,6 +43,7 @@ def add_wardrobe_item(
     client = get_supabase_client()
     
     data = {
+        "user_id": user_id,
         "item_name": item_name,
         "category": category,
         "color": color,
@@ -58,7 +59,7 @@ def add_wardrobe_item(
     data = {k: v for k, v in data.items() if v is not None}
     
     try:
-        response = client.table('wardrobe').insert(data).execute()
+        response = client.table('wardrobe_items').insert(data).execute()
         items = _parse_response_data(response)
         if items:
             return f"衣橱物品添加成功！ID: {items[0].get('id', 'unknown')}"
@@ -68,7 +69,7 @@ def add_wardrobe_item(
 
 
 @tool
-def query_wardrobe(
+def query_wardrobe_items(
     user_id: str,
     category: Optional[str] = None,
     color: Optional[str] = None,
@@ -78,11 +79,11 @@ def query_wardrobe(
     limit: int = 50
 ) -> str:
     """查询衣橱物品。"""
-    ctx = request_context.get() or new_context(method="query_wardrobe")
+    ctx = request_context.get() or new_context(method="query_wardrobe_items")
     client = get_supabase_client()
     
     try:
-        query = client.table('wardrobe').select('*').eq('user_id', user_id)
+        query = client.table('wardrobe_items').select('*').eq('user_id', user_id)
         
         if category:
             query = query.eq('category', category)
@@ -166,7 +167,7 @@ def update_wardrobe_item(
         return "没有需要更新的数据"
     
     try:
-        response = client.table('wardrobe').update(update_data).eq('id', item_id).eq('user_id', user_id).execute()
+        response = client.table('wardrobe_items').update(update_data).eq('id', item_id).eq('user_id', user_id).execute()
         items = _parse_response_data(response)
         if items:
             return f"衣橱物品更新成功！ID: {items[0].get('id', 'unknown')}"
@@ -188,7 +189,7 @@ def record_item_wear(
     client = get_supabase_client()
     
     try:
-        item_response = client.table('wardrobe').select('wear_count').eq('id', item_id).maybe_single().execute()
+        item_response = client.table('wardrobe_items').select('wear_count').eq('id', item_id).maybe_single().execute()
         items = _parse_response_data(item_response)
         current_count = 0
         if items:
@@ -199,7 +200,7 @@ def record_item_wear(
             "last_worn": wear_date
         }
         
-        client.table('wardrobe').update(update_data).eq('id', item_id).eq('user_id', user_id).execute()
+        client.table('wardrobe_items').update(update_data).eq('id', item_id).eq('user_id', user_id).execute()
         
         return f"穿着记录成功！物品 {item_id} 今日已穿着"
     except APIError as e:

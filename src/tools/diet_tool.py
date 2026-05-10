@@ -36,7 +36,7 @@ def create_diet_plan(
     try:
         client = get_supabase_client()
 
-        client.table('diet_plan').insert({
+        client.table('diet_plans').insert({
             'goal': goal,
             'daily_calories': daily_calories,
             'protein_ratio': protein_ratio,
@@ -65,7 +65,7 @@ def get_diet_plan() -> str:
     ctx = request_context.get() or new_context(method="get_diet_plan")
     try:
         client = get_supabase_client()
-        response = client.table('diet_plan').select('*').order('id', desc=True).limit(1).execute()
+        response = client.table('diet_plans').select('*').order('id', desc=True).limit(1).execute()
 
         if not response.data:
             return "未找到饮食计划，请先使用 create_diet_plan 创建计划"
@@ -115,7 +115,7 @@ def log_diet(
     try:
         client = get_supabase_client()
 
-        client.table('daily_diet_log').insert({
+        client.table('diet_records').insert({
             'log_date': datetime.now().isoformat(),
             'meal_type': meal_type,
             'food_name': food_name,
@@ -145,7 +145,7 @@ def get_diet_log(days: int = 7) -> str:
     try:
         client = get_supabase_client()
 
-        response = client.table('daily_diet_log').select('*').order('log_date', desc=True).limit(days * 20).execute()
+        response = client.table('diet_records').select('*').order('log_date', desc=True).limit(days * 20).execute()
 
         if not response.data:
             return "未找到饮食记录"
@@ -196,13 +196,13 @@ def analyze_diet_and_exercise(days: int = 7) -> str:
         client = get_supabase_client()
 
         # 获取饮食记录
-        diet_response = client.table('daily_diet_log').select('*').order('log_date', desc=True).limit(days * 20).execute()
+        diet_response = client.table('diet_records').select('*').order('log_date', desc=True).limit(days * 20).execute()
 
         # 获取锻炼记录
         exercise_response = client.table('daily_exercise_log').select('*').order('log_date', desc=True).limit(days * 10).execute()
 
         # 获取饮食计划
-        diet_plan_response = client.table('diet_plan').select('*').order('id', desc=True).limit(1).execute()
+        diet_plan_response = client.table('diet_plans').select('*').order('id', desc=True).limit(1).execute()
 
         # 统计数据
         total_calories_in = 0.0

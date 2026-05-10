@@ -49,6 +49,7 @@ def create_user_profile(
     client = get_supabase_client()
     
     data = {
+        "user_id": user_id,
         "name": name,
         "age": age,
         "gender": gender,
@@ -69,7 +70,7 @@ def create_user_profile(
     data = {k: v for k, v in data.items() if v is not None}
     
     try:
-        response = client.table('user_profile').insert(data).execute()
+        response = client.table('user_profiles').insert(data).execute()
         items = _parse_response_data(response)
         if items:
             record_id = items[0].get('id', 'unknown')
@@ -86,7 +87,7 @@ def get_user_profile(user_id: str) -> str:
     client = get_supabase_client()
     
     try:
-        response = client.table('user_profile').select('*').eq('user_id', user_id).maybe_single().execute()
+        response = client.table('user_profiles').select('*').eq('user_id', user_id).maybe_single().execute()
         profile = _parse_response_data(response)
         
         if not profile:
@@ -173,7 +174,7 @@ def update_user_profile(
         return "没有需要更新的数据"
     
     try:
-        response = client.table('user_profile').update(update_data).eq('user_id', user_id).execute()
+        response = client.table('user_profiles').update(update_data).eq('user_id', user_id).execute()
         items = _parse_response_data(response)
         if items:
             return f"用户档案更新成功！ID: {items[0].get('id', 'unknown')}"

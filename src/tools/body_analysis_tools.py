@@ -188,7 +188,7 @@ def save_body_analysis_to_profile(
     if style_list:
         update_data["style_direction"] = json.dumps(style_list)
     
-    result = supabase.table("user_profile").update(update_data).execute()
+    result = supabase.table("user_profiles").update(update_data).eq("user_id", user_id).execute()
     
     if result.data:
         return f"✅ 体型分析结果已保存到用户档案！\n\n保存内容：\n- 体型：{body_type}\n- 脸型：{face_type}\n- 肤色：{skin_tone}\n- 色调：{skin_undertone or '未指定'}"

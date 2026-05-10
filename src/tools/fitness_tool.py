@@ -36,7 +36,7 @@ def create_fitness_plan(
     try:
         client = get_supabase_client()
 
-        client.table('fitness_plan').insert({
+        client.table('fitness_plans').insert({
             'goal': goal,
             'target_weight': target_weight if target_weight > 0 else None,
             'weekly_workout_days': weekly_workout_days,
@@ -61,7 +61,7 @@ def get_fitness_plan() -> str:
     ctx = request_context.get() or new_context(method="get_fitness_plan")
     try:
         client = get_supabase_client()
-        response = client.table('fitness_plan').select('*').order('id', desc=True).limit(1).execute()
+        response = client.table('fitness_plans').select('*').order('id', desc=True).limit(1).execute()
 
         if not response.data:
             return "未找到健身计划，请先使用 create_fitness_plan 创建计划"
@@ -109,7 +109,7 @@ def log_exercise(
     try:
         client = get_supabase_client()
 
-        client.table('daily_exercise_log').insert({
+        client.table('fitness_records').insert({
             'log_date': datetime.now().isoformat(),
             'exercise_name': exercise_name,
             'duration': duration,
@@ -138,7 +138,7 @@ def get_exercise_log(days: int = 7) -> str:
     try:
         client = get_supabase_client()
 
-        response = client.table('daily_exercise_log').select('*').order('log_date', desc=True).limit(days * 10).execute()
+        response = client.table('fitness_records').select('*').order('log_date', desc=True).limit(days * 10).execute()
 
         if not response.data:
             return "未找到锻炼记录"

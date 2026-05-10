@@ -19,7 +19,7 @@ def get_user_profile() -> str:
     ctx = request_context.get() or new_context(method="get_user_profile")
     try:
         client = get_supabase_client()
-        response = client.table('user_profile').select('*').order('id', desc=True).limit(1).execute()
+        response = client.table('user_profiles').select('*').order('id', desc=True).limit(1).execute()
 
         if not response.data:
             return "未找到用户档案，请先使用 update_user_profile 创建档案"
@@ -73,7 +73,7 @@ def update_user_profile(
         client = get_supabase_client()
 
         # 查询是否已有档案
-        existing = client.table('user_profile').select('id').execute()
+        existing = client.table('user_profiles').select('id').execute()
 
         update_data = {
             'height': height,
@@ -93,12 +93,12 @@ def update_user_profile(
             last_item = existing.data[-1]
             profile_id = last_item['id'] if isinstance(last_item, dict) else None
             if profile_id:
-                client.table('user_profile').update(update_data).eq('id', profile_id).execute()
+                client.table('user_profiles').update(update_data).eq('id', profile_id).execute()
                 fat_str = f"，体脂率{body_fat_rate}%" if body_fat_rate > 0 else ""
                 return f"✓ 用户档案已更新：身高 {height}cm，体重 {weight}kg，体型 {body_type}{fat_str}"
         else:
             # 创建新档案
-            client.table('user_profile').insert(update_data).execute()
+            client.table('user_profiles').insert(update_data).execute()
             fat_str = f"，体脂率{body_fat_rate}%" if body_fat_rate > 0 else ""
             return f"✓ 用户档案已创建：身高 {height}cm，体重 {weight}kg，体型 {body_type}{fat_str}"
 
