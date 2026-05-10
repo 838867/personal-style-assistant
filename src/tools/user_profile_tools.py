@@ -1,38 +1,73 @@
-"""用户档案管理工具"""
+"""用户档案管理工具 - 使用原生requests调用Supabase REST API"""
 import json
-from typing import Any, Optional
+import os
+import requests
 from langchain.tools import tool
-from storage.database.supabase_client import get_supabase_client
+
+
+def get_supabase_headers():
+    """获取Supabase请求头"""
+    supabase_url = os.getenv("SUPABASE_URL", "")
+    supabase_key = os.getenv("SUPABASE_ANON_KEY", "")
+    
+    if not supabase_url or not supabase_key:
+        # 尝试扣子平台的内置环境变量
+        supabase_url = os.getenv("COZE_SUPABASE_URL", supabase_url)
+        supabase_key = os.getenv("COZE_SUPABASE_ANON_KEY", supabase_key)
+    
+    return {
+        "apikey": supabase_key,
+        "Authorization": f"Bearer {supabase_key}"
+    }
+
+
+def get_supabase_url():
+    """获取Supabase URL"""
+    supabase_url = os.getenv("SUPABASE_URL", "")
+    if not supabase_url:
+        supabase_url = os.getenv("COZE_SUPABASE_URL", "")
+    return supabase_url
 
 
 @tool
 def get_user_profile() -> str:
     """获取用户档案信息"""
     try:
-        client = get_supabase_client()
-        response = client.table("user_profile").select("*").limit(1).execute()
+        headers = get_supabase_headers()
+        base_url = get_supabase_url()
         
-        # Supabase SDK 返回的 response.data 是列表
-        data_list: list = response.data
-        
-        if data_list and len(data_list) > 0:
-            profile: dict = data_list[0]
-            return json.dumps({
-                "success": True,
-                "data": {
-                    "height": str(profile.get("height", "")),
-                    "weight": str(profile.get("weight", "")),
-                    "body_type": profile.get("body_type", ""),
-                    "skin_tone": profile.get("skin_tone", ""),
-                    "style_preference": profile.get("style_preference", ""),
-                    "city": profile.get("city", "")
-                }
-            }, ensure_ascii=False)
-        else:
+        if not base_url:
             return json.dumps({
                 "success": False,
-                "message": "尚未创建用户档案，请先创建"
+                "message": "数据库未配置"
             }, ensure_ascii=False)
+        
+        response = requests.get(
+            f"{base_url}/rest/v1/user_profile",
+            headers=headers,
+            params={"select": "*", "limit": 1}
+        )
+        
+        if response.status_code == 200:
+            data = response.json()
+            if data and len(data) > 0:
+                profile = data[0]
+                return json.dumps({
+                    "success": True,
+                    "data": {
+                        "height": profile.get("height", ""),
+                        "weight": profile.get("weight", ""),
+                        "body_type": profile.get("body_type", ""),
+                        "skin_tone": profile.get("skin_tone", ""),
+                        "style_preference": profile.get("style_preference", ""),
+                        "city": profile.get("city", "")
+                    }
+                }, ensure_ascii=False)
+        
+        return json.dumps({
+            "success": False,
+            "message": "尚未创建用户档案"
+        }, ensure_ascii=False)
     except Exception as e:
         return json.dumps({
             "success": False,
@@ -56,15 +91,25 @@ def update_user_profile(
         weight: 体重(kg)
         body_type: 体型(偏瘦/正常/偏胖/肥胖)
         skin_tone: 肤色(偏白/正常/偏黑)
-        style_preference: 风格偏好(简约休闲/商务正装/运动风/时尚潮流)
+        style_preference: 风格偏好
         city: 所在城市
     """
     try:
-        client = get_supabase_client()
+        headers = get_supabase_headers()
+        base_url = get_supabase_url()
+        
+        if not base_url:
+            return json.dumps({
+                "success": False,
+                "message": "数据库未配置"
+            }, ensure_ascii=False)
         
         # 查询是否已有档案
-        existing_response = client.table("user_profile").select("id").limit(1).execute()
-        existing_list: list = existing_response.data
+        response = requests.get(
+            f"{base_url}/rest/v1/user_profile",
+            headers=headers,
+            params={"select": "id", "limit": 1}
+        )
         
         profile_data = {
             "height": height,
@@ -75,21 +120,39 @@ def update_user_profile(
             "city": city
         }
         
-        if existing_list and len(existing_list) > 0:
-            # 更新
-            existing_item: dict = existing_list[0]
-            user_id = existing_item["id"]
-            client.table("user_profile").update(profile_data).eq("id", user_id).execute()
-            message = "用户档案已更新"
-        else:
-            # 创建
-            client.table("user_profile").insert(profile_data).execute()
-            message = "用户档案已创建"
+        if response.status_code == 200:
+            data = response.json()
+            if data and len(data) > 0:
+                # 更新
+                user_id = data[0]["id"]
+                update_response = requests.patch(
+                    f"{base_url}/rest/v1/user_profile?id=eq.{user_id}",
+                    headers={**headers, "Prefer": "return=minimal"},
+                    json=profile_data
+                )
+                if update_response.status_code in [200, 204]:
+                    return json.dumps({
+                        "success": True,
+                        "message": "用户档案已更新",
+                        "data": profile_data
+                    }, ensure_ascii=False)
+            else:
+                # 创建
+                create_response = requests.post(
+                    f"{base_url}/rest/v1/user_profile",
+                    headers={**headers, "Prefer": "return=minimal"},
+                    json=profile_data
+                )
+                if create_response.status_code in [200, 201, 204]:
+                    return json.dumps({
+                        "success": True,
+                        "message": "用户档案已创建",
+                        "data": profile_data
+                    }, ensure_ascii=False)
         
         return json.dumps({
-            "success": True,
-            "message": message,
-            "data": profile_data
+            "success": False,
+            "message": "保存失败"
         }, ensure_ascii=False)
     except Exception as e:
         return json.dumps({
