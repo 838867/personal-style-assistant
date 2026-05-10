@@ -1,6 +1,5 @@
 """用户档案管理工具"""
-import json
-from typing import Optional, Dict, Any, List
+from typing import Optional, Dict, Any
 from langchain.tools import tool
 from coze_coding_utils.log.write_log import request_context
 from coze_coding_utils.runtime_ctx.context import new_context
@@ -15,11 +14,12 @@ def get_user_profile() -> str:
     
     try:
         response = client.table("user_profile").select("*").limit(1).execute()
+        data = response.json()
         
-        if not response.data:
+        if not data or not data.get("data"):
             return "未找到用户档案。请先创建用户档案。"
         
-        user = response.data[0]
+        user = data["data"][0]
         
         result = f"""用户档案信息：
 - 身高: {user.get('height', '未知')} cm
@@ -54,8 +54,9 @@ def create_or_update_user_profile(
     try:
         # 检查是否已有档案
         existing = client.table("user_profile").select("id").limit(1).execute()
+        existing_data = existing.json()
         
-        data = {}
+        data: Dict[str, Any] = {}
         if height is not None:
             data["height"] = height
         if weight is not None:
@@ -74,9 +75,9 @@ def create_or_update_user_profile(
         if not data:
             return "请提供至少一个要更新的字段。"
         
-        if existing.data:
+        if existing_data and existing_data.get("data"):
             # 更新现有档案
-            record_id = existing.data[0]["id"]
+            record_id = existing_data["data"][0]["id"]
             client.table("user_profile").update(data).eq("id", record_id).execute()
             return f"用户档案已更新！\n\n更新内容：\n" + "\n".join([f"- {k}: {v}" for k, v in data.items()])
         else:
