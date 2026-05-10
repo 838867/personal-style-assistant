@@ -53,7 +53,7 @@ def create_fitness_plan(
     data = {k: v for k, v in data.items() if v is not None}
     
     try:
-        response = client.table('fitness_plans').insert(data).execute()
+        response = client.table('fitness_plan').insert(data).execute()
         items = _parse_response_data(response)
         if items:
             return f"健身计划创建成功！ID: {items[0].get('id', 'unknown')}"
@@ -63,17 +63,17 @@ def create_fitness_plan(
 
 
 @tool
-def get_fitness_plans(
+def get_fitness_plan(
     user_id: str,
     is_active: bool = True,
     limit: int = 10
 ) -> str:
     """获取健身计划列表。"""
-    ctx = request_context.get() or new_context(method="get_fitness_plans")
+    ctx = request_context.get() or new_context(method="get_fitness_plan")
     client = get_supabase_client()
     
     try:
-        query = client.table('fitness_plans').select('*').eq('user_id', user_id)
+        query = client.table('fitness_plan').select('*')
         
         if is_active:
             query = query.eq('is_active', True)
@@ -127,7 +127,7 @@ def record_fitness(
     data = {k: v for k, v in data.items() if v is not None}
     
     try:
-        response = client.table('fitness_records').insert(data).execute()
+        response = client.table('daily_exercise_log').insert(data).execute()
         items = _parse_response_data(response)
         if items:
             return f"健身记录保存成功！ID: {items[0].get('id', 'unknown')}"
@@ -137,18 +137,18 @@ def record_fitness(
 
 
 @tool
-def get_fitness_records(
+def get_daily_exercise_log(
     user_id: str,
     start_date: Optional[str] = None,
     end_date: Optional[str] = None,
     limit: int = 30
 ) -> str:
     """获取健身记录。"""
-    ctx = request_context.get() or new_context(method="get_fitness_records")
+    ctx = request_context.get() or new_context(method="get_daily_exercise_log")
     client = get_supabase_client()
     
     try:
-        query = client.table('fitness_records').select('*').eq('user_id', user_id)
+        query = client.table('daily_exercise_log').select('*')
         
         if start_date:
             query = query.gte('workout_date', start_date)

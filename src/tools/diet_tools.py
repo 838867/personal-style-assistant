@@ -56,7 +56,7 @@ def create_diet_plan(
     data = {k: v for k, v in data.items() if v is not None}
     
     try:
-        response = client.table('diet_plans').insert(data).execute()
+        response = client.table('diet_plan').insert(data).execute()
         items = _parse_response_data(response)
         if items:
             return f"饮食计划创建成功！ID: {items[0].get('id', 'unknown')}"
@@ -66,17 +66,17 @@ def create_diet_plan(
 
 
 @tool
-def get_diet_plans(
+def get_diet_plan(
     user_id: str,
     is_active: bool = True,
     limit: int = 10
 ) -> str:
     """获取饮食计划列表。"""
-    ctx = request_context.get() or new_context(method="get_diet_plans")
+    ctx = request_context.get() or new_context(method="get_diet_plan")
     client = get_supabase_client()
     
     try:
-        query = client.table('diet_plans').select('*').eq('user_id', user_id)
+        query = client.table('diet_plan').select('*')
         
         if is_active:
             query = query.eq('is_active', True)
@@ -142,7 +142,7 @@ def record_diet(
     if plan_id and plan_id > 0:
         # 验证计划是否存在
         try:
-            response = client.table('diet_plans').select('id').eq('id', plan_id).maybe_single().execute()
+            response = client.table('diet_plan').select('id').eq('id', plan_id).maybe_single().execute()
             items = _parse_response_data(response)
             if items:
                 effective_plan_id = plan_id
@@ -165,7 +165,7 @@ def record_diet(
     data = {k: v for k, v in data.items() if v is not None}
     
     try:
-        response = client.table('diet_records').insert(data).execute()
+        response = client.table('daily_diet_log').insert(data).execute()
         items = _parse_response_data(response)
         if items:
             return f"饮食记录保存成功！ID: {items[0].get('id', 'unknown')}"
@@ -175,7 +175,7 @@ def record_diet(
 
 
 @tool
-def get_diet_records(
+def get_daily_diet_log(
     user_id: str,
     meal_date: Optional[str] = None,
     start_date: Optional[str] = None,
@@ -183,11 +183,11 @@ def get_diet_records(
     limit: int = 30
 ) -> str:
     """获取饮食记录。"""
-    ctx = request_context.get() or new_context(method="get_diet_records")
+    ctx = request_context.get() or new_context(method="get_daily_diet_log")
     client = get_supabase_client()
     
     try:
-        query = client.table('diet_records').select('*').eq('user_id', user_id)
+        query = client.table('daily_diet_log').select('*')
         
         if meal_date:
             query = query.eq('meal_date', meal_date)
@@ -224,7 +224,7 @@ def get_daily_nutrition_summary(user_id: str, target_date: str) -> str:
     client = get_supabase_client()
     
     try:
-        response = client.table('diet_records').select('*').eq('user_id', user_id).eq('meal_date', target_date).execute()
+        response = client.table('daily_diet_log').select('*').eq('meal_date', target_date).execute()
         items = _parse_response_data(response)
         
         if not items:
@@ -291,15 +291,15 @@ def get_detailed_nutrition_analysis(
     
     try:
         # 获取饮食记录
-        response = client.table('diet_records').select('*').eq('user_id', user_id).eq('meal_date', target_date).execute()
+        response = client.table('daily_diet_log').select('*').eq('meal_date', target_date).execute()
         items = _parse_response_data(response)
         
         # 获取用户档案（获取营养目标）
-        profile_response = client.table('user_profiles').select('*').eq('user_id', user_id).execute()
+        profile_response = client.table('user_profile').select('*').execute()
         profile_data = _parse_response_data(profile_response)
         
         # 获取饮食计划
-        plan_response = client.table('diet_plans').select('*').eq('user_id', user_id).order('created_at', desc=True).limit(1).execute()
+        plan_response = client.table('diet_plan').select('*').order('created_at', desc=True).limit(1).execute()
         plan_data = _parse_response_data(plan_response)
         
         # 计算今日摄入
@@ -495,7 +495,7 @@ def get_nutrition_recommendations(
             target_date = datetime.now().strftime('%Y-%m-%d')
         
         # 获取用户档案
-        profile_response = client.table('user_profiles').select('*').eq('user_id', user_id).execute()
+        profile_response = client.table('user_profile').select('*').execute()
         profile_data = _parse_response_data(profile_response)
         
         # 获取最近的饮食记录（最近7天）
@@ -503,7 +503,7 @@ def get_nutrition_recommendations(
         end_date = datetime.now().strftime('%Y-%m-%d')
         start_date = (datetime.now() - timedelta(days=7)).strftime('%Y-%m-%d')
         
-        week_response = client.table('diet_records').select('*').eq('user_id', user_id).gte('meal_date', start_date).lte('meal_date', end_date).execute()
+        week_response = client.table('daily_diet_log').select('*').gte('meal_date', start_date).lte('meal_date', end_date).execute()
         week_data = _parse_response_data(week_response)
         
         # 获取目标值

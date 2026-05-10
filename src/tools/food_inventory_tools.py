@@ -57,7 +57,7 @@ def add_food_to_inventory(
         client = get_supabase_client()
         
         # 检查是否已存在
-        existing = client.table("food_inventory").select("id").eq("user_id", user_id).eq("food_name", food_name).execute()
+        existing = client.table("food_inventory").select("id").eq("food_name", food_name).execute()
         
         if existing.data:
             return f"食物【{food_name}】已在仓库中，请使用update_food_inventory更新数量。"
@@ -118,7 +118,7 @@ def get_food_inventory(
     try:
         client = get_supabase_client()
         
-        query = client.table("food_inventory").select("*").eq("user_id", user_id)
+        query = client.table("food_inventory").select("*")
         
         if category:
             query = query.eq("category", category)
@@ -218,7 +218,7 @@ def update_food_inventory_item(
         client = get_supabase_client()
         
         # 查找食物
-        existing: list = client.table("food_inventory").select("id, food_name").eq("user_id", user_id).eq("food_name", food_name).execute()  # type: ignore
+        existing: list = client.table("food_inventory").select("id, food_name").eq("food_name", food_name).execute()  # type: ignore
         
         if not existing:
             return f"未找到食物【{food_name}】，请先添加到仓库。"
@@ -278,13 +278,13 @@ def get_shopping_suggestions(
         client = get_supabase_client()
         
         # 获取现有食物
-        existing: list = client.table("food_inventory").select("*").eq("user_id", user_id).execute()  # type: ignore
+        existing: list = client.table("food_inventory").select("*").execute()  # type: ignore
         existing_foods = {item.get("food_name"): item for item in existing}
         
         # 获取饮食计划中的目标食物（如果有）
         target_foods = []
         if diet_plan_id:
-            plan_response: list = client.table("diet_plans").select("target_foods").eq("id", diet_plan_id).execute()  # type: ignore
+            plan_response: list = client.table("diet_plan").select("target_foods").eq("id", diet_plan_id).execute()  # type: ignore
             if plan_response and len(plan_response) > 0:
                 first_plan = plan_response[0]
                 if isinstance(first_plan, dict) and first_plan.get("target_foods"):
@@ -396,7 +396,7 @@ def delete_food_from_inventory(
     try:
         client = get_supabase_client()
         
-        response = client.table("food_inventory").delete().eq("user_id", user_id).eq("food_name", food_name).execute()
+        response = client.table("food_inventory").delete().eq("food_name", food_name).execute()
         
         if response.data:
             return f"食物【{food_name}】已从仓库中删除。"

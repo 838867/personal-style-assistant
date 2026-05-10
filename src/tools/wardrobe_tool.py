@@ -34,7 +34,7 @@ def add_clothing(
     ctx = request_context.get() or new_context(method="add_clothing")
     try:
         client = get_supabase_client()
-        client.table('wardrobe_items').insert({
+        client.table('wardrobe').insert({
             'category': category,
             'color': color,
             'style': style,
@@ -70,7 +70,7 @@ def query_wardrobe(
     ctx = request_context.get() or new_context(method="query_wardrobe")
     try:
         client = get_supabase_client()
-        query = client.table('wardrobe_items').select('*')
+        query = client.table('wardrobe').select('*')
 
         # 根据参数添加过滤条件
         if category:
