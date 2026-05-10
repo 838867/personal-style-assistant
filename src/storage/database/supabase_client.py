@@ -10,13 +10,14 @@ _env_loaded = False
 def _load_env() -> None:
     global _env_loaded
 
-    if _env_loaded or (os.getenv("COZE_SUPABASE_URL") and os.getenv("COZE_SUPABASE_ANON_KEY")):
+    # 支持两种变量名格式：扣子平台标准格式或带 COZE_ 前缀的格式
+    if _env_loaded or (os.getenv("SUPABASE_URL") and os.getenv("SUPABASE_ANON_KEY")):
         return
 
     try:
         from dotenv import load_dotenv
         load_dotenv()
-        if os.getenv("COZE_SUPABASE_URL") and os.getenv("COZE_SUPABASE_ANON_KEY"):
+        if os.getenv("SUPABASE_URL") and os.getenv("SUPABASE_ANON_KEY"):
             _env_loaded = True
             return
     except ImportError:
@@ -30,8 +31,11 @@ def _load_env() -> None:
         client.close()
 
         for env_var in env_vars:
-            if not os.getenv(env_var.key):
-                os.environ[env_var.key] = env_var.value
+            # 支持两种变量名格式
+            if env_var.key in ("SUPABASE_URL", "COZE_SUPABASE_URL") and not os.getenv("SUPABASE_URL"):
+                os.environ["SUPABASE_URL"] = env_var.value
+            elif env_var.key in ("SUPABASE_ANON_KEY", "COZE_SUPABASE_ANON_KEY") and not os.getenv("SUPABASE_ANON_KEY"):
+                os.environ["SUPABASE_ANON_KEY"] = env_var.value
 
         _env_loaded = True
     except Exception:
@@ -41,13 +45,14 @@ def _load_env() -> None:
 def get_supabase_credentials() -> tuple[str, str]:
     _load_env()
 
-    url = os.getenv("COZE_SUPABASE_URL")
-    anon_key = os.getenv("COZE_SUPABASE_ANON_KEY")
+    # 支持两种变量名格式：扣子平台标准格式或带 COZE_ 前缀的格式
+    url = os.getenv("SUPABASE_URL") or os.getenv("COZE_SUPABASE_URL")
+    anon_key = os.getenv("SUPABASE_ANON_KEY") or os.getenv("COZE_SUPABASE_ANON_KEY")
 
     if not url:
-        raise ValueError("COZE_SUPABASE_URL is not set")
+        raise ValueError("SUPABASE_URL is not set")
     if not anon_key:
-        raise ValueError("COZE_SUPABASE_ANON_KEY is not set")
+        raise ValueError("SUPABASE_ANON_KEY is not set")
 
     return url, anon_key
 

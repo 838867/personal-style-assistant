@@ -36,10 +36,10 @@ def evaluate_clothing_fit(
     """
     # 获取用户信息
     profile: Dict[str, Any] = {}
-    wardrobe_items: List[Dict[str, Any]] = []
+    wardrobe: List[Dict[str, Any]] = []
     try:
         supabase = get_supabase_client()
-        profile_response = supabase.table("user_profiles").select("*").eq("user_id", user_id).execute()
+        profile_response = supabase.table("user_profile").select("*").execute()
         if profile_response.data:
             profile = profile_response.data[0]
     except Exception:
@@ -48,9 +48,9 @@ def evaluate_clothing_fit(
     # 获取用户衣橱统计
     try:
         supabase = get_supabase_client()
-        stats_response = supabase.table("wardrobe_items").select("category, color").eq("user_id", user_id).execute()
+        stats_response = supabase.table("wardrobe").select("category, color").execute()
         if stats_response.data:
-            wardrobe_items = stats_response.data
+            wardrobe = stats_response.data
     except Exception:
         pass
     
@@ -61,8 +61,8 @@ def evaluate_clothing_fit(
     face_shape = profile.get("face_shape", "未知")
     
     # 衣橱统计
-    categories = [item.get("category", "") for item in wardrobe_items]
-    colors = [item.get("color", "") for item in wardrobe_items]
+    categories = [item.get("category", "") for item in wardrobe]
+    colors = [item.get("color", "") for item in wardrobe]
     
     # 生成详细评估报告
     evaluation = f"""根据您的个人信息和衣橱情况，对这件衣服的适合度评估如下：

@@ -40,7 +40,6 @@ def create_fitness_plan(
     client = get_supabase_client()
     
     data = {
-        "user_id": user_id,
         "plan_name": plan_name,
         "goal": goal,
         "duration_weeks": duration_weeks,
@@ -53,7 +52,7 @@ def create_fitness_plan(
     data = {k: v for k, v in data.items() if v is not None}
     
     try:
-        response = client.table('fitness_plans').insert(data).execute()
+        response = client.table('fitness_plan').insert(data).execute()
         items = _parse_response_data(response)
         if items:
             return f"健身计划创建成功！ID: {items[0].get('id', 'unknown')}"
@@ -63,17 +62,17 @@ def create_fitness_plan(
 
 
 @tool
-def get_fitness_plans(
+def get_fitness_plan(
     user_id: str,
     is_active: bool = True,
     limit: int = 10
 ) -> str:
     """获取健身计划列表。"""
-    ctx = request_context.get() or new_context(method="get_fitness_plans")
+    ctx = request_context.get() or new_context(method="get_fitness_plan")
     client = get_supabase_client()
     
     try:
-        query = client.table('fitness_plans').select('*').eq('user_id', user_id)
+        query = client.table('fitness_plan').select('*')
         
         if is_active:
             query = query.eq('is_active', True)
@@ -104,7 +103,7 @@ def get_fitness_plans(
 def record_fitness(
     user_id: str,
     plan_id: int,
-    workout_date: str,
+    log_date: str,
     duration_minutes: int,
     calories_burned: int,
     exercises_completed: str,
@@ -117,7 +116,7 @@ def record_fitness(
     data = {
         "user_id": user_id,
         "plan_id": plan_id,
-        "workout_date": workout_date,
+        "log_date": log_date,
         "duration_minutes": duration_minutes,
         "calories_burned": calories_burned,
         "exercises_completed": exercises_completed,
@@ -127,7 +126,7 @@ def record_fitness(
     data = {k: v for k, v in data.items() if v is not None}
     
     try:
-        response = client.table('fitness_records').insert(data).execute()
+        response = client.table('daily_exercise_log').insert(data).execute()
         items = _parse_response_data(response)
         if items:
             return f"健身记录保存成功！ID: {items[0].get('id', 'unknown')}"
@@ -137,25 +136,25 @@ def record_fitness(
 
 
 @tool
-def get_fitness_records(
+def get_daily_exercise_log(
     user_id: str,
     start_date: Optional[str] = None,
     end_date: Optional[str] = None,
     limit: int = 30
 ) -> str:
     """获取健身记录。"""
-    ctx = request_context.get() or new_context(method="get_fitness_records")
+    ctx = request_context.get() or new_context(method="get_daily_exercise_log")
     client = get_supabase_client()
     
     try:
-        query = client.table('fitness_records').select('*').eq('user_id', user_id)
+        query = client.table('daily_exercise_log').select('*')
         
         if start_date:
-            query = query.gte('workout_date', start_date)
+            query = query.gte('log_date', start_date)
         if end_date:
-            query = query.lte('workout_date', end_date)
+            query = query.lte('log_date', end_date)
         
-        response = query.order('workout_date', desc=True).limit(limit).execute()
+        response = query.order('log_date', desc=True).limit(limit).execute()
         items = _parse_response_data(response)
         
         if not items:
@@ -173,7 +172,7 @@ def get_fitness_records(
                 total_calories += calories
                 total_duration += duration
                 
-                result += f"\n{idx}. {record.get('workout_date', '未知')}\n"
+                result += f"\n{idx}. {record.get('log_date', '未知')}\n"
                 result += f"   时长: {duration} 分钟\n"
                 result += f"   消耗: {calories} kcal\n"
                 result += f"   内容: {record.get('exercises_completed', '未设置')}\n"
