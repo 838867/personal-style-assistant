@@ -1,9 +1,19 @@
 """用户档案管理工具"""
-from typing import Optional, Dict, Any
+import json
+from typing import Optional, Dict, Any, List
 from langchain.tools import tool
 from coze_coding_utils.log.write_log import request_context
 from coze_coding_utils.runtime_ctx.context import new_context
 from storage.database.supabase_client import get_supabase_client
+
+
+def safe_get(data: Any, key: str, default: str = "未知") -> str:
+    """安全获取字典值"""
+    if isinstance(data, dict):
+        value = data.get(key)
+        if value is not None:
+            return str(value)
+    return default
 
 
 @tool
@@ -14,7 +24,13 @@ def get_user_profile() -> str:
     
     try:
         response = client.table("user_profile").select("*").limit(1).execute()
-        data = response.json()
+        raw_data = response.json()
+        
+        # 解析 JSON 字符串
+        if isinstance(raw_data, str):
+            data = json.loads(raw_data)
+        else:
+            data = raw_data
         
         if not data or not data.get("data"):
             return "未找到用户档案。请先创建用户档案。"
@@ -22,14 +38,14 @@ def get_user_profile() -> str:
         user = data["data"][0]
         
         result = f"""用户档案信息：
-- 身高: {user.get('height', '未知')} cm
-- 体重: {user.get('weight', '未知')} kg
-- 体脂率: {user.get('body_fat_rate', '未知')}%
-- 体型: {user.get('body_type', '未知')}
-- 肤色: {user.get('skin_tone', '未知')}
-- 风格偏好: {user.get('style_preference', '未知')}
-- 城市: {user.get('city', '未知')}
-- 创建时间: {user.get('created_at', '未知')}"""
+- 身高: {safe_get(user, 'height')} cm
+- 体重: {safe_get(user, 'weight')} kg
+- 体脂率: {safe_get(user, 'body_fat_rate')}%
+- 体型: {safe_get(user, 'body_type')}
+- 肤色: {safe_get(user, 'skin_tone')}
+- 风格偏好: {safe_get(user, 'style_preference')}
+- 城市: {safe_get(user, 'city')}
+- 创建时间: {safe_get(user, 'created_at')}"""
         
         return result
         
@@ -54,7 +70,13 @@ def create_or_update_user_profile(
     try:
         # 检查是否已有档案
         existing = client.table("user_profile").select("id").limit(1).execute()
-        existing_data = existing.json()
+        existing_raw = existing.json()
+        
+        # 解析 JSON 字符串
+        if isinstance(existing_raw, str):
+            existing_data = json.loads(existing_raw)
+        else:
+            existing_data = existing_raw
         
         data: Dict[str, Any] = {}
         if height is not None:
@@ -75,7 +97,7 @@ def create_or_update_user_profile(
         if not data:
             return "请提供至少一个要更新的字段。"
         
-        if existing_data and existing_data.get("data"):
+        if existing_data and existing_data.get("data") and len(existing_data["data"]) > 0:
             # 更新现有档案
             record_id = existing_data["data"][0]["id"]
             client.table("user_profile").update(data).eq("id", record_id).execute()
