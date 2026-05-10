@@ -1,6 +1,6 @@
 """用户档案管理工具"""
 import json
-from typing import Optional
+from typing import Any, Optional
 from langchain.tools import tool
 from storage.database.supabase_client import get_supabase_client
 
@@ -12,8 +12,11 @@ def get_user_profile() -> str:
         client = get_supabase_client()
         response = client.table("user_profile").select("*").limit(1).execute()
         
-        if response.data and len(response.data) > 0:
-            profile = response.data[0]
+        # Supabase SDK 返回的 response.data 是列表
+        data_list: list = response.data
+        
+        if data_list and len(data_list) > 0:
+            profile: dict = data_list[0]
             return json.dumps({
                 "success": True,
                 "data": {
@@ -60,7 +63,8 @@ def update_user_profile(
         client = get_supabase_client()
         
         # 查询是否已有档案
-        existing = client.table("user_profile").select("id").limit(1).execute()
+        existing_response = client.table("user_profile").select("id").limit(1).execute()
+        existing_list: list = existing_response.data
         
         profile_data = {
             "height": height,
@@ -71,14 +75,15 @@ def update_user_profile(
             "city": city
         }
         
-        if existing.data and len(existing.data) > 0:
+        if existing_list and len(existing_list) > 0:
             # 更新
-            user_id = existing.data[0]["id"]
-            response = client.table("user_profile").update(profile_data).eq("id", user_id).execute()
+            existing_item: dict = existing_list[0]
+            user_id = existing_item["id"]
+            client.table("user_profile").update(profile_data).eq("id", user_id).execute()
             message = "用户档案已更新"
         else:
             # 创建
-            response = client.table("user_profile").insert(profile_data).execute()
+            client.table("user_profile").insert(profile_data).execute()
             message = "用户档案已创建"
         
         return json.dumps({
